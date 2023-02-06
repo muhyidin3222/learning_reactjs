@@ -1,62 +1,30 @@
-import {
-  RecoilRoot,
-  atom,
-  selector,
-  useRecoilState,
-  useRecoilValue,
-} from 'recoil';
+import React, { Suspense, lazy } from 'react';
+import { Skeleton } from 'antd'
 
-const textState = atom({
-  key: 'textState',
-  default: '',
-});
+const Component1 = lazy(() => import('./Component1'));
+const Component2 = lazy(() => delayForDemo(import('./Component2')));
+const Component3 = lazy(() => delayForDemo(import('./Component3')));
 
-const charCountState = selector({
-  key: 'charCountState',
-  get: ({ get }) => {
-    const text = get(textState);
-    return text.length;
-  },
-});
-
-function CharacterCount() {
-  const count = useRecoilValue(charCountState);
-
-  return <>Character Count: {count}</>;
-}
-
-function CharacterCounter() {
-  return (
-    <div>
-      <TextInput />
-      <CharacterCount />
-    </div>
-  );
-}
-
-function TextInput() {
-  const [text, setText] = useRecoilState(textState);
-
-  const onChange = (event) => {
-    setText(event.target.value);
-  };
-
-  console.log(text, 'textState')
-  return (
-    <div>
-      <input type="text" value={text} onChange={onChange} />
-      <br />
-      Echo: {text}
-    </div>
-  );
+// Add a fixed delay so you can see the loading state
+function delayForDemo(promise) {
+  return new Promise(resolve => {
+    setTimeout(resolve, 500);
+  }).then(() => promise);
 }
 
 function App() {
-  return (
-    <RecoilRoot>
-      <CharacterCounter />
-    </RecoilRoot>
-  );
+  return <Suspense fallback={<Skeleton />}>
+    <div style={{ display: 'flex' }}>
+      <Component1 />
+      <Suspense fallback={<Skeleton />}>
+        <Component2 />
+      </Suspense>
+      <Suspense fallback={<Skeleton />}>
+        <Component3 />
+      </Suspense>
+    </div>
+  </Suspense>
+    ;
 }
 
 export default App;
