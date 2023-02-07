@@ -1,30 +1,79 @@
-import React, { Suspense, lazy } from 'react';
-import { Skeleton } from 'antd'
+import React from "react";
+import ReactDOM from 'react-dom'
 
-const Component1 = lazy(() => import('./Component1'));
-const Component2 = lazy(() => delayForDemo(import('./Component2')));
-const Component3 = lazy(() => delayForDemo(import('./Component3')));
+// These two containers are siblings in the DOM
+const modalRoot = document.getElementById('modal');
 
-// Add a fixed delay so you can see the loading state
-function delayForDemo(promise) {
-  return new Promise(resolve => {
-    setTimeout(resolve, 500);
-  }).then(() => promise);
+class Modal extends React.Component {
+  constructor(props) {
+    super(props);
+    this.el = document.createElement('div');
+  }
+
+  componentDidMount() {
+    // The portal element is inserted in the DOM tree after
+    // the Modal's children are mounted, meaning that children
+    // will be mounted on a detached DOM node. If a child
+    // component requires to be attached to the DOM tree
+    // immediately when mounted, for example to measure a
+    // DOM node, or uses 'autoFocus' in a descendant, add
+    // state to Modal and only render the children when Modal
+    // is inserted in the DOM tree.
+    modalRoot.appendChild(this.el);
+  }
+
+  componentWillUnmount() {
+    modalRoot.removeChild(this.el);
+  }
+
+  render() {
+    return ReactDOM.createPortal(
+      this.props.children,
+      this.el
+    );
+  }
 }
 
-function App() {
-  return <Suspense fallback={<Skeleton />}>
-    <div style={{ display: 'flex' }}>
-      <Component1 />
-      <Suspense fallback={<Skeleton />}>
-        <Component2 />
-      </Suspense>
-      <Suspense fallback={<Skeleton />}>
-        <Component3 />
-      </Suspense>
+export default class App extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { clicks: 0 };
+    this.handleClick = this.handleClick.bind(this);
+  }
+
+  handleClick() {
+    // This will fire when the button in Child is clicked,
+    // updating Parent's state, even though button
+    // is not direct descendant in the DOM.
+    this.setState(state => ({
+      clicks: state.clicks + 1
+    }));
+  }
+
+  render() {
+    return (
+      <div onClick={this.handleClick}>
+        <p>Number of clicks: {this.state.clicks}</p>
+        <p>
+          Open up the browser DevTools
+          to observe that the button
+          is not a child of the div
+          with the onClick handler.
+        </p>
+        <Modal>
+          <Child />
+        </Modal>
+      </div>
+    );
+  }
+}
+
+function Child() {
+  // The click event on this button will bubble up to parent,
+  // because there is no 'onClick' attribute defined
+  return (
+    <div className="modal">
+      <button>Click</button>
     </div>
-  </Suspense>
-    ;
+  );
 }
-
-export default App;
